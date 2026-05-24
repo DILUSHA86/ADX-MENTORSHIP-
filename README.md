@@ -1,3 +1,47 @@
+// app.js (Main Thread)
+
+let hasUserInteracted = false;
+const brainWorker = new Worker('brain-worker.js');
+
+// 1. Establish the Guardrail: Listen for early user intent
+window.addEventListener('mousemove', () => hasUserInteracted = true, { once: true });
+window.addEventListener('scroll', () => hasUserInteracted = true, { once: true });
+window.addEventListener('touchstart', () => hasUserInteracted = true, { once: true });
+
+// 2. Handle the Brain's asynchronous response
+brainWorker.onmessage = function(event) {
+  const predictedOrder = event.data;
+  
+  if (!predictedOrder) return;
+
+  // 3. The Decision Gate
+  if (!hasUserInteracted) {
+    // The user is still taking in the screen; it is safe to shift
+    applyNeuralFadeIn(predictedOrder);
+  } else {
+    // The user is already active. Do not interrupt them.
+    // Queue the neural layout in sessionStorage for the next page reload.
+    console.log("Shift aborted: User active. Queuing for next load.");
+    sessionStorage.setItem('pendingNeuralLayout', JSON.stringify(predictedOrder));
+  }
+};
+
+function applyNeuralFadeIn(predictedOrder) {
+  const container = document.getElementById('adaptive-container');
+  
+  // Briefly fade out the container to mask the hard layout snap
+  container.style.opacity = '0';
+  
+  setTimeout(() => {
+    predictedOrder.forEach((elementId, index) => {
+      const el = document.getElementById(elementId);
+      if (el) el.style.order = index; 
+    });
+    
+    // Fade back in with the new neural layout
+    container.style.opacity = '1';
+  }, 150); // 150ms is fast enough to feel like a micro-interaction
+}
 // app.js
 // This runs on the main UI thread.
 
