@@ -1,3 +1,29 @@
+// adaptation.js
+const UIAdaptor = {
+  applyNeuralLayout: function() {
+    const rawData = Telemetry.data;
+    const predictedOrder = Brain.predictNextDesiredElement(rawData);
+
+    if (!predictedOrder) return; // Exit if no data yet
+
+    // Apply the newly predicted visual hierarchy
+    predictedOrder.forEach((elementId, index) => {
+      const el = document.getElementById(elementId);
+      if (el) {
+        // Lower order numbers appear first in Flexbox/Grid
+        el.style.order = index; 
+        
+        // Optional: Add a subtle data-attribute for CSS styling (e.g., highlighting)
+        el.setAttribute('data-neural-rank', index === 0 ? 'primary' : 'secondary');
+      }
+    });
+  }
+};
+
+// Run adaptation smoothly on page load
+window.addEventListener('DOMContentLoaded', () => {
+  UIAdaptor.applyNeuralLayout();
+});
 // brain.js
 const Brain = {
   predictNextDesiredElement: function(telemetryData) {
