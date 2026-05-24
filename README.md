@@ -1,3 +1,47 @@
+// brain.js
+const Brain = {
+  predictNextDesiredElement: function(telemetryData) {
+    if (!telemetryData || telemetryData.length === 0) return null;
+
+    // Simple frequency analysis: Count which IDs are clicked most
+    const frequencyMap = telemetryData.reduce((acc, event) => {
+      acc[event.id] = (acc[event.id] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Sort the UI element IDs by highest interaction frequency
+    const sortedPredictions = Object.keys(frequencyMap).sort((a, b) => {
+      return frequencyMap[b] - frequencyMap[a];
+    });
+
+    return sortedPredictions; // e.g., ['btn-courses', 'btn-settings', 'btn-profile']
+  }
+};
+// telemetry.js
+const Telemetry = {
+  data: JSON.parse(localStorage.getItem('ui_telemetry')) || [],
+
+  logInteraction: function(elementId, actionType) {
+    const event = {
+      id: elementId,
+      action: actionType,
+      timestamp: Date.now(),
+      timeOfDay: new Date().getHours() // Useful for pattern recognition
+    };
+    
+    this.data.push(event);
+    // Persist locally so the AI has historical data across sessions
+    localStorage.setItem('ui_telemetry', JSON.stringify(this.data));
+    console.log(`Logged: ${elementId} via ${actionType}`);
+  }
+};
+
+// Attach listeners to our UI elements
+document.querySelectorAll('.adaptive-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    Telemetry.logInteraction(e.target.id, 'click');
+  });
+});
 import React, { useState, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
 
