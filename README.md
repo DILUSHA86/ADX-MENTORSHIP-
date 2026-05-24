@@ -1,3 +1,63 @@
+// app.js
+// This runs on the main UI thread.
+
+// 1. Initialize the Brain Worker
+const brainWorker = new Worker('brain-worker.js');
+
+// 2. Listen for when the brain finishes calculating
+brainWorker.onmessage = function(event) {
+  const predictedOrder = event.data;
+  
+  if (predictedOrder) {
+    console.log("Brain finished thinking. Applying new layout:", predictedOrder);
+    applyNeuralLayout(predictedOrder);
+  }
+};
+
+// 3. The Function to trigger the Brain
+function triggerBrainAnalysis() {
+  // Fetch our stored data
+  const rawData = JSON.parse(localStorage.getItem('ui_telemetry')) || [];
+  
+  // Send the data to the background worker to be processed
+  brainWorker.postMessage(rawData); 
+}
+
+// 4. The DOM Manipulation (The Muscle)
+function applyNeuralLayout(predictedOrder) {
+  predictedOrder.forEach((elementId, index) => {
+    const el = document.getElementById(elementId);
+    if (el) el.style.order = index; 
+  });
+}
+
+// Run the analysis when the page loads
+window.addEventListener('DOMContentLoaded', triggerBrainAnalysis);
+// brain-worker.js
+// This runs in a background thread!
+
+self.onmessage = function(event) {
+  // 1. Receive telemetry data from the main UI thread
+  const telemetryData = event.data;
+
+  if (!telemetryData || telemetryData.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  // 2. The Brain Logic (Frequency Analysis / ML Model)
+  const frequencyMap = telemetryData.reduce((acc, interaction) => {
+    acc[interaction.id] = (acc[interaction.id] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sortedPredictions = Object.keys(frequencyMap).sort((a, b) => {
+    return frequencyMap[b] - frequencyMap[a];
+  });
+
+  // 3. Send the predicted layout order back to the main thread
+  self.postMessage(sortedPredictions);
+};
 // adaptation.js
 const UIAdaptor = {
   applyNeuralLayout: function() {
